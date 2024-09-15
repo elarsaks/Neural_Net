@@ -4,15 +4,52 @@ import random
 
 # Read CSV file without checking for missing values
 data = []
-with open("data.csv", newline="") as csvfile:
+with open("data/full_data.csv", newline="") as csvfile:
     reader = csv.reader(csvfile)
     headers = next(reader)  # Skip the header
     for row in reader:
         data.append(row)
 
+
+# Shuffle the dataset
+random.seed(42)  # For reproducibility
+random.shuffle(data)
+
+
+# Define the split ratio (80% training, 20% testing)
+split_ratio = 0.8
+split_index = int(len(data) * split_ratio)
+
+
+# Split the data into training and testing sets
+train_data = data[:split_index]
+test_data = data[split_index:]
+
+
+# Save the training data to a CSV file
+with open("data/train_data.csv", "w", newline="") as trainfile:
+    writer = csv.writer(trainfile)
+    writer.writerow(headers)  # Write the header
+    writer.writerows(train_data)  # Write the training data
+
+
+# Save the testing data to a CSV file
+with open("data/test_data.csv", "w", newline="") as testfile:
+    writer = csv.writer(testfile)
+    writer.writerow(headers)  # Write the header
+    writer.writerows(test_data)  # Write the testing data
+
+
 # Convert string data to numerical values (for relevant columns)
-X = [[float(row[1]), float(row[2]), float(row[3])] for row in data]  # income, age, loan
-y = [int(row[4]) for row in data]  # class (target)
+X_train = [
+    [float(row[1]), float(row[2]), float(row[3])] for row in train_data
+]  # income, age, loan
+y_train = [int(row[4]) for row in train_data]  # class (target)
+
+X_test = [
+    [float(row[1]), float(row[2]), float(row[3])] for row in test_data
+]  # income, age, loan
+y_test = [int(row[4]) for row in test_data]  # class (target)
 
 
 # Manually normalize the data using Min-Max scaling
@@ -31,7 +68,8 @@ def min_max_scaling(X):
     return X_scaled
 
 
-X_scaled = min_max_scaling(X)
+X_train_scaled = min_max_scaling(X_train)
+X_test_scaled = min_max_scaling(X_test)
 
 
 # Sigmoid function
@@ -50,9 +88,10 @@ def random_matrix(rows, cols):
 
 
 # Initialize weights and biases
-input_size = len(X_scaled[0])  # 3 input features: income, age, loan
+input_size = len(X_train_scaled[0])  # 3 input features: income, age, loan
 hidden_size = 4
 output_size = 1
+
 
 # Randomly initialize weights and biases
 W1 = random_matrix(input_size, hidden_size)
@@ -135,15 +174,15 @@ def backprop(X, y, W1, b1, W2, b2, A1, A2, learning_rate=0.1):
 
 # Training loop
 for epoch in range(10000):  # Number of epochs
-    A1, A2 = forward(X_scaled, W1, b1, W2, b2)
-    W1, b1, W2, b2 = backprop(X_scaled, y, W1, b1, W2, b2, A1, A2)
+    A1, A2 = forward(X_train_scaled, W1, b1, W2, b2)
+    W1, b1, W2, b2 = backprop(X_train_scaled, y_train, W1, b1, W2, b2, A1, A2)
 
     # Optional: Calculate loss for monitoring
     if epoch % 1000 == 0:
         loss = sum(
-            -y[i] * math.log(A2[i][0]) - (1 - y[i]) * math.log(1 - A2[i][0])
-            for i in range(len(y))
-        ) / len(y)
+            -y_train[i] * math.log(A2[i][0]) - (1 - y_train[i]) * math.log(1 - A2[i][0])
+            for i in range(len(y_train))
+        ) / len(y_train)
         print(f"Epoch {epoch}, Loss: {loss}")
 
 
@@ -157,3 +196,11 @@ def save_weights_biases(W, b, W_file, b_file):
 
 save_weights_biases(W1, b1, "model_weights/W1.csv", "model_weights/b1.csv")
 save_weights_biases(W2, b2, "model_weights/W2.csv", "model_weights/b2.csv")
+
+# Testing the model
+A1_test, A2_test = forward(X_test_scaled, W1, b1, W2, b2)
+predictions = [1 if a > 0.5 else 0 for a in [row[0] for row in A2_test]]
+accuracy = sum([1 for i in range(len(y_test)) if predictions[i] == y_test[i]]) / len(
+    y_test
+)
+print(f"Test Accuracy: {accuracy}")
