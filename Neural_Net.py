@@ -3,12 +3,19 @@ import math
 import random
 
 # Read CSV file without checking for missing values
+# Read CSV file without checking for missing values
 data = []
 with open("data/full_data.csv", newline="") as csvfile:
     reader = csv.reader(csvfile)
     headers = next(reader)  # Skip the header
     for row in reader:
-        data.append(row)
+        # Convert relevant columns to numerical values
+        income = float(row[1])
+        age = float(row[2])
+        loan = float(row[3])
+        target = int(row[4])
+        # Append the row to the data
+        data.append([row[0], income, age, loan, target])
 
 
 # Shuffle the dataset
@@ -40,16 +47,13 @@ with open("data/test_data.csv", "w", newline="") as testfile:
     writer.writerows(test_data)  # Write the testing data
 
 
-# Convert string data to numerical values (for relevant columns)
-X_train = [
-    [float(row[1]), float(row[2]), float(row[3])] for row in train_data
-]  # income, age, loan
-y_train = [int(row[4]) for row in train_data]  # class (target)
+# Extract features and target from training data
+X_train = [[row[1], row[2], row[3]] for row in train_data]  # income, age, loan
+y_train = [row[4] for row in train_data]  # class (target)
 
-X_test = [
-    [float(row[1]), float(row[2]), float(row[3])] for row in test_data
-]  # income, age, loan
-y_test = [int(row[4]) for row in test_data]  # class (target)
+# Extract features and target from testing data
+X_test = [[row[1], row[2], row[3]] for row in test_data]  # income, age, loan
+y_test = [row[4] for row in test_data]  # class (target)
 
 
 # Manually normalize the data using Min-Max scaling
